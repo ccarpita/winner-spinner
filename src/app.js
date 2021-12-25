@@ -102,16 +102,14 @@ class EntryList extends Mesh.Element {
       const entry = this.createElement('single-entry');
       this.listen(entry.onUpdate(() => {
         setTimeout(() => {
-          const { name, numTickets } = entry.value;
-          if (!name && numTickets === 0) {
-            this.removeEmptyEntries();
-          }
           const empties = this.entryElements.filter(el => {
             const { name, numTickets } = el.value;
             return name === '' && numTickets === 0;
           });
           if (empties.length === 0) {
             push();
+          } else {
+            this.removeEmptyEntries();
           }
         }, 1);
       }));
@@ -149,16 +147,13 @@ class EntryList extends Mesh.Element {
   }
 
   removeEmptyEntries() {
-    console.log('remove-empties')
-    const entries = this.entryElements;
+    const entries = this.findElements('single-entry').filter((entry) => {
+      return !entry.value.name && entry.value.numTickets === 0;
+    });
     if (entries.length < 2) {
       return;
     }
-    entries.forEach(entry => {
-      if (!entry.name && entry.numTickets === 0) {
-        entry.parentNode = null;
-      }
-    });
+    entries.slice(1).forEach(entry => entry.remove());
   }
 
   /**
@@ -299,7 +294,6 @@ class SpinnerApp extends Mesh.Element {
           lower = upper;
         }
       }, 3000)
-      console.log('wheel', wheel)
     }));
   }
 }

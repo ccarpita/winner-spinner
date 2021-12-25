@@ -69,7 +69,6 @@ Mesh.TextInput = class extends Mesh.Element {
       this._setInput(input.value);
     });
     input.addEventListener('focus', () => {
-      console.log('focus')
       this._focussed = true;
       input.setAttribute('class', 'focussed');
       setTimeout(() => {
