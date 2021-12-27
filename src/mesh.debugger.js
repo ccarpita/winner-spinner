@@ -19,7 +19,7 @@
     
     debugOff() {
       this.setStoredValueOff(config.debug);
-      this.unsubscribeAll();
+      this._unsubscribeAll();
     }
    
     debugOnKeydown() {
@@ -29,9 +29,9 @@
         console.log(`[mesh.debugger] keydown code=${e.code}`);
       }
       document.addEventListener('keydown', onKeyDown);
-      this.listen(() => {
+      this._unsubscribe.push(() => {
         document.removeEventListener('keydown', onKeyDown);
-      })
+      });
     }
 
     debugOnAll() {
@@ -56,6 +56,13 @@
 
     _storedIsOn(key) {
       return this._localStorage.getItem(key) == '1'
+    }
+
+    _unsubscribeAll() {
+      for (const unsub of this._unsubscribe) {
+        unsub();
+      }
+      this._unsubscribe = [];
     }
   }
 

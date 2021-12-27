@@ -287,7 +287,7 @@ class SpinnerApp extends Mesh.Element {
           if (winnerPos >= lower && winnerPos < upper) {
             winner = entry;
             entryList.highlightEntry(index, '#e94');
-            spinner.text = 'We have a winner!'
+            spinner.text = 'We have a winner! Click to spin again.'
             break;
           }
           index += 1;
