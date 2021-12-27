@@ -71,11 +71,6 @@ Mesh.TextInput = class extends Mesh.Element {
     input.addEventListener('focus', () => {
       this._focussed = true;
       input.setAttribute('class', 'focussed');
-      setTimeout(() => {
-        if (this.focussed) {
-          input.select()
-        }
-      }, 100);
     });
     input.addEventListener('blur', () => {
       this._focussed = false;
@@ -112,9 +107,12 @@ Mesh.TextInput = class extends Mesh.Element {
   styleText() {
     return `
       input {
-        background-color: #eee;
-        color: black;
         appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-color: #eee;
+        border-radius: 0;
+        color: black;
         border-width: 0px;
         border-color: #ccc;
         border-bottom-width: 0px;
@@ -138,7 +136,7 @@ Mesh.TextInput = class extends Mesh.Element {
         margin: 0;
       }
       input.focussed {
-        background-color: #c3c;
+        background-color: #111;
         color: white
       }
       input.highlighted {
@@ -170,7 +168,7 @@ Mesh.NumberInput = class extends Mesh.TextInput {
   }
 
   keyCodePredicate(keyCode) {
-    return keyCode.match(/^(Digit|Tab|Backspace)/) !== null;
+    return keyCode.match(/^(Digit|Tab|Backspace|Control|Alt|Meta)/) !== null;
   }
 
   createInputElement() {
