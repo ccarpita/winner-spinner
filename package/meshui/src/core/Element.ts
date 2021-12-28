@@ -1,33 +1,19 @@
-window.Mesh = {};
-
-Mesh.LocalStorage = class {
-  constructor(scope) {
-    this._scope = scope;
-  }
-
-  scopedKey(key) {
-    return `mesh.${this._scope}.${key}`
-  }
-
-  getItem(key) {
-    return localStorage.getItem(this.scopedKey(key))
-  }
-
-  setItem(key, value) {
-    localStorage.setItem(this.scopedKey(key), value);
-  }
-}
-
 /**
  * Root class containing helpers for creating shadow roots, attaching styles,
  * and 
  */
-Mesh.Element = class extends HTMLElement {
+
+import Emitter from "./Emitter";
+
+export default class Element extends HTMLElement {
+  private static _serial = 0;
+
+  private _elementSerial: number;
+  private _unsubscribe: (() => void)[]
 
   constructor() {
     super();
-    Mesh.Element._serial = Mesh.Element._serial || 0;
-    this._elementSerial = ++Mesh.Element._serial;
+    this._elementSerial = ++Element._serial;
     this._unsubscribe = [];
   }
  
@@ -59,15 +45,15 @@ Mesh.Element = class extends HTMLElement {
     }
   }
 
-  createShadowRoot(mode = 'open') {
+  createShadowRoot(mode: ShadowRootMode = 'open', delegatesFocus: boolean = false): ShadowRoot {
     if (!this.shadowRoot) {
-      return this.attachShadow({mode, delegatesFocus: true});
+      return this.attachShadow({mode, delegatesFocus});
     }
     return this.shadowRoot;
   }
 
-  createClosedShadowRoot() {
-    return this.createShadowRoot('closed')
+  createClosedShadowRoot(delegatesFocus: boolean = false) {
+    return this.createShadowRoot('closed', delegatesFocus)
   }
 
   connectedCallback() {
@@ -98,20 +84,20 @@ Mesh.Element = class extends HTMLElement {
   //                                                               //
   ///////////////////////////////////////////////////////////////////
 
-  createElement(tagName, attrs = {}) {
+  createElement(tagName: string, attrs: {[k: string]: any} = {}): HTMLElement  {
     const el = document.createElement(tagName);
     Object.keys(attrs || {}).forEach(key => el.setAttribute(key, attrs[key]));
     return el;
   }
   
-  findElement(query) {
+  findElement(query: string): HTMLElement | null {
     if (!this.shadowRoot) {
       return null;
     }
     return this.shadowRoot.querySelector(query);
   }
   
-  findElements(query) {
+  findElements(query: string): HTMLElement[]  {
     if (!this.shadowRoot) {
       return [];
     }
@@ -127,28 +113,11 @@ Mesh.Element = class extends HTMLElement {
   //                                                               //
   ///////////////////////////////////////////////////////////////////
 
-  createEmitter({ async, delayMs } = {async: false, delayMs: 1}) {
-    const registry = {};
-    return {
-      on: (name, fn) => {
-        (registry[name] = registry[name] || []).push(fn);
-        return function unsubscribe() {
-          registry[name] = registry[name].filter(match => match !== fn);
-        }
-      },
-      emit: (name, ...args) => {
-        (registry[name] = registry[name] || []).forEach((fn) => {
-          if (async) {
-            setTimeout(() => fn(...args), delayMs || 1);
-          } else {
-            fn(...args);
-          }
-        });
-      }
-    }
+  createEmitter({ async, delayMs } = {async: false, delayMs: 1}): Emitter {
+    return new Emitter({ async, delayMs });
   }
 
-  listen(unsubscribeFn) {
+  listen(unsubscribeFn: () => void) {
     this._unsubscribe.push(unsubscribeFn);
   }
 
@@ -160,7 +129,7 @@ Mesh.Element = class extends HTMLElement {
   //                                                               //
   ///////////////////////////////////////////////////////////////////
 
-  pickDefined(...args) {
+  pickDefined(...args: any[]): any {
     for (const arg of args) {
       if (arg || arg === false || arg === 0 || arg === '') {
         return arg;
