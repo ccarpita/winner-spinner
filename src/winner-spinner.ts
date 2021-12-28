@@ -1,4 +1,17 @@
-class SingleEntry extends Mesh.Element {
+import Element from '../package/meshui/src/core/Element'
+import Emitter from '../package/meshui/src/core/Emitter'
+import TextInput from '../package/meshui/src/ui/TextInput'
+import NumberInput from '../package/meshui/src/ui/NumberInput'
+
+// Construct for forced module includes
+new TextInput()
+new NumberInput();
+
+class SingleEntry extends Element {
+  private _emitter: Emitter
+  private _nameInput: TextInput | null = null
+  private _ticketsInput: NumberInput | null = null
+
   constructor() {
     super();
     const emitter = this._emitter = this.createEmitter();
@@ -8,41 +21,50 @@ class SingleEntry extends Mesh.Element {
     return {name: '', numTickets: 0};
   }
 
-  onUpdate(fn) {
+  onUpdate(fn: () => void) {
     return this._emitter.on('update', fn)
   }
 
-  onEnter(fn) {
+  onEnter(fn: () => void) {
     return this._emitter.on('enter', fn)
   }
 
   focus() {
+    if (!this._nameInput) {
+      return;
+    }
     return this._nameInput.focus();
   }
 
-  highlight(color) {
+  highlight(color: string) {
+    if (!this._nameInput || !this._ticketsInput) {
+      return;
+    }
     this._nameInput.highlight(color);
     this._ticketsInput.highlight(color);
   }
 
   clearHighlight() {
+    if (!this._nameInput || !this._ticketsInput) {
+      return;
+    }
     this._nameInput.clearHighlight();
     this._ticketsInput.clearHighlight();
   }
 
   connectedCallback() {
     super.connectedCallback();
-    this.createShadowRoot();
+    const root = this.createShadowRoot();
     const nameItem = this.createGridItem('name');
-    const nameInput = this._nameInput = this.createElement('mesh-text-input');
+    const nameInput = this._nameInput = this.createElement('mesh-text-input') as TextInput;
     nameItem.appendChild(nameInput);
     const ticketsItem = this.createGridItem('tickets')
-    const ticketsInput = this._ticketsInput = this.createElement('mesh-number-input');
+    const ticketsInput = this._ticketsInput = this.createElement('mesh-number-input') as NumberInput;
     ticketsItem.appendChild(ticketsInput);
     const container = this.createElement('div', {'class': 'container'});
     container.appendChild(nameItem);
     container.appendChild(ticketsItem);
-    this.shadowRoot.appendChild(container);
+    root.appendChild(container);
     this._getValue = () => {
       return {
         name: nameInput.value,
@@ -57,7 +79,7 @@ class SingleEntry extends Mesh.Element {
     }));
   }
 
-  createGridItem(dataAttr) {
+  createGridItem(dataAttr: string) {
     return this.createElement('div', {'class': 'item', 'data-attr': dataAttr});
   }
 
@@ -85,9 +107,10 @@ class SingleEntry extends Mesh.Element {
 customElements.define('single-entry', SingleEntry);
 
 
-class EntryList extends Mesh.Element {
-  get entryElements() {
-    return this.findElements('single-entry');
+export class EntryList extends Element {
+
+  get entryElements(): SingleEntry[] {
+    return this.findElements('single-entry') as SingleEntry[];
   }
 
   connectedCallback() {
@@ -96,10 +119,10 @@ class EntryList extends Mesh.Element {
     const container = this.createElement('div', {'class': 'container'});
     root.appendChild(container)
     for (const entry of this.entryElements) {
-      entry.parentNode = null;
+      entry.remove();
     }
-    const push = ({ focus } = {}) => {
-      const entry = this.createElement('single-entry');
+    const push = ({ focus }: { focus: boolean } = { focus: false }) => {
+      const entry = this.createElement('single-entry') as SingleEntry;
       this.listen(entry.onUpdate(() => {
         setTimeout(() => {
           const empties = this.entryElements.filter(el => {
@@ -140,14 +163,14 @@ class EntryList extends Mesh.Element {
         return;
       }
       const last = entries[entries.length - 1];
-      last.parentNode = null;
+      last.remove();
     }
     // Setup list with an initial entry.
     push();
   }
 
   removeEmptyEntries() {
-    const entries = this.findElements('single-entry').filter((entry) => {
+    const entries = this.entryElements.filter((entry) => {
       return !entry.value.name && entry.value.numTickets === 0;
     });
     if (entries.length < 2) {
@@ -160,21 +183,25 @@ class EntryList extends Mesh.Element {
    * Returns an array of {name: str, tickets: number} objects.
    */
   get entries() {
-    const entries = this.findElements('single-entry');
-    return entries.map(entry => entry.value).filter(v => v.name && v.numTickets > 0);
+    return this.entryElements.map(entry => entry.value).filter(v => v.name && v.numTickets > 0);
   }
 
-  highlightEntry(index, color) {
+  get entriesWithValues() {
+    return this.entryElements.map(entry => entry.value.name && entry.value.numTickets > 0);
+  }
+
+
+  highlightEntry(index: number, color: string) {
     this.clearHighlights();
-    const entries = this.findElements('single-entry');
-    if (entries[index]) {
-      entries[index].setAttribute('data-highlight', '1')
-      entries[index].highlight(color);
+    const entry = this.entryElements[index];
+    if (entry) {
+      entry.setAttribute('data-highlight', '1')
+      entry.highlight(color);
     }
   }
 
   clearHighlights() {
-    this.findElements('single-entry').forEach(entry => {
+    this.entryElements.forEach(entry => {
       entry.setAttribute('data-highlight', '')
       entry.clearHighlight();
     });
@@ -200,12 +227,19 @@ class EntryList extends Mesh.Element {
 }
 customElements.define('entry-list', EntryList);
 
-class SpinnerButton extends Mesh.Element {
+class SpinnerButton extends Element {
+  private _emitter: Emitter 
+  private _button: HTMLButtonElement | null = null
+
+  constructor() {
+    super();
+    this._emitter = this.createEmitter();
+  }
+
   connectedCallback() {
     super.connectedCallback();
-    this._emitter = this.createEmitter();
     const root = this.createShadowRoot();
-    const button = this._button = this.createElement('button');
+    const button = this._button = this.createElement('button') as HTMLButtonElement;
     button.textContent = 'Spin It!'
     const onClick = () => {
       this._emitter.emit('click');
@@ -215,7 +249,10 @@ class SpinnerButton extends Mesh.Element {
     root.appendChild(button);
   }
 
-  set text(text) {
+  set text(text: string) {
+    if (!this._button) {
+      return;
+    }
     this._button.textContent = text;
   }
 
@@ -234,19 +271,21 @@ class SpinnerButton extends Mesh.Element {
     `;
   }
 
-  onClick(fn) {
+  onClick(fn: () => void) {
     return this._emitter.on('click', fn)
   }
 }
 customElements.define('spinner-button', SpinnerButton);
 
-class SpinnerApp extends Mesh.Element {
+export class SpinnerApp extends Element {
+  private _interval: NodeJS.Timeout | null = null; 
+
   connectedCallback() {
     super.connectedCallback();
     const root = this.createShadowRoot()
-    const entryList = this.createElement('entry-list');
+    const entryList = this.createElement('entry-list') as EntryList;
     root.appendChild(entryList);
-    const spinner = this.createElement('spinner-button');
+    const spinner = this.createElement('spinner-button') as SpinnerButton;
     root.appendChild(spinner);
     this.listen(spinner.onClick(() => {
       const wheel = entryList.entries;
@@ -254,12 +293,12 @@ class SpinnerApp extends Mesh.Element {
       if (!totalTickets) {
         return;
       }
-      if (this.ival) {
-        clearInterval(this.ival);
+      if (this._interval) {
+        clearInterval(this._interval);
       }
       let ms = 0;
       const timeScale = 1000 / totalTickets;
-      this.ival = setInterval(() => {
+      this._interval = setInterval(() => {
         ms++;
         const pos = ms % totalTickets;
         let lower = 0;
@@ -267,7 +306,7 @@ class SpinnerApp extends Mesh.Element {
         for (const entry of wheel) {
           const upper = lower + entry.numTickets; 
           if (pos >= lower && pos < upper) {
-            entryList.highlightEntry(index);
+            entryList.highlightEntry(index, '#cc3');
             break;
           }
           lower = upper;
@@ -276,7 +315,10 @@ class SpinnerApp extends Mesh.Element {
       }, timeScale);
       spinner.text = 'Spinning...';
       setTimeout(() => {
-        clearInterval(this.ival);
+        if (this._interval) {
+          clearInterval(this._interval);
+          this._interval = null;
+        }
         const winnerPos = Math.floor(Math.random() * totalTickets);
         entryList.clearHighlights();
         let winner = wheel[0];

@@ -1,0 +1,16 @@
+{
+  "name": "winner-spinner",
+  "version": "0.0.1",
+  "devDependencies": {
+    "typescript": "^4.5.4",
+    "webpack": "^5.65.0",
+    "webpack-cli": "^4.9.1"
+  },
+  "scripts": {
+    "build": "tsc && webpack --mode production --entry ./compiled/src/winner-spinner.js",
+    "dirtycheck": "scripts/dirtycheck.sh"
+  },
+  "workspaces": [
+    "package/@mesh-ux/*"
+  ]
+}
